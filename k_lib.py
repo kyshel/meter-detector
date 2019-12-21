@@ -6,7 +6,7 @@ from datetime import datetime
 import time
 import math
 import os
-
+from functools import partial
 
 # 85
 THRESHOLD_OF_BINARY=85
@@ -48,10 +48,10 @@ def get_date():
 	return str(int(round(time.time() * 1000)))[-4:]
 
 
-def draw_cross(img,loc,color=BLUE):
+def draw_cross(img,loc,color=BLUE,line_length	=10):
 	(x,y) = loc
-	cv2.line(img,(x,y-10),(x,y+10),color,1)
-	cv2.line(img,(x-10,y),(x+10,y),color,1)
+	cv2.line(img,(x,y-line_length),(x,y+line_length),color,1)
+	cv2.line(img,(x-line_length,y),(x+line_length,y),color,1)
 
 
 def get_region(img):
@@ -145,13 +145,42 @@ def get_center(contours_filtered,region):
 
 	cv2.imshow("center.png"+get_date(), region) if DEBUG_IMSHOW	else 1
 
+	logging.info(loc_center	)
+
 	return loc_center
+
+def get_center2(region):
+	res = region.copy()
+	gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
+	#circle1 = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 1000, param1=50, param2=50, minRadius=220, maxRadius=2000)
+
+	#cv2.imshow("gray"+get_date(), gray)
+
+	circle1 = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1,1000,param1=50,param2=50,minRadius=220,maxRadius=2000)
+
+
+
+
+
+
+
+	x,y,r=circle1[0][0][0],circle1[0][0][1],circle1[0][0][2]
+
+	#cv2.circle(region,(int(x),int(y)) ,0, BLACK , thickness=r, lineType=8, shift=0) 
+
+
+	draw_cross	(region	,(int(x),int(y)),YELLOW	,500)
+
+	cv2.imshow("center"+get_date(), region)
+	pprint	((x,y,r)) 
+
+
 
 def get_img_cutted(img,loc_center):
 	cv2.circle(img,loc_center ,0, BLACK , thickness=CENTER_CIRCULE_RADIUS, lineType=8, shift=0) 
 	cv2.imshow("cutted.png"+get_date(), img) if DEBUG_IMSHOW	else 1
 	return img
-
+  
 
 def get_cutted_info(region,contours_cutted_filtered,loc_center):
 	info_list=[]
@@ -192,7 +221,7 @@ def get_cutted_info(region,contours_cutted_filtered,loc_center):
 	ox,oy=loc_center	
 	cv2.putText(res, text=text_center, org = loc_center, fontFace = 1, fontScale=1, color=WHITE, thickness = 1, lineType=16)
 	cv2.putText(res, text="Result: "+msg, org = (ox,oy+20), fontFace = 1, fontScale=1, color=GREEN, thickness = 1, lineType=16)
-	cv2.imshow("cutted.png"+get_date(), res)
+	#cv2.imshow("cutted.png"+get_date(), res)
 
 
 
