@@ -8,12 +8,12 @@ import math
 import os
 from functools import partial
 
-# 85
-THRESHOLD_OF_BINARY=85
+# 85 ,70 ,90
+THRESHOLD_OF_BINARY=90
 # 10
 CONTOUR_MINIMAL_AREA=10
 # 420
-CENTER_CIRCULE_RADIUS=420
+CENTER_CIRCULE_RADIUS=205
 # 0
 DEBUG_IMSHOW = 0
 
@@ -42,6 +42,9 @@ YELLOW =[0,243,255]
 PINK =[189,0,255]
 PURPLE =[255,0,205]
 
+
+def nothing(x):
+    pass
 
 
 def get_date():
@@ -152,41 +155,82 @@ def get_center(contours_filtered,region):
 def get_center2(region):
 	res = region.copy()
 	gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
-	#circle1 = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 1000, param1=50, param2=50, minRadius=220, maxRadius=2000)
-
-	#cv2.imshow("gray"+get_date(), gray)
-
-	circle1 = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1,1000,param1=50,param2=50,minRadius=220,maxRadius=2000)
-
-
-
-
-
-
-
-	x,y,r=circle1[0][0][0],circle1[0][0][1],circle1[0][0][2]
-
-	#cv2.circle(region,(int(x),int(y)) ,0, BLACK , thickness=r, lineType=8, shift=0) 
-
-
-	draw_cross	(region	,(int(x),int(y)),YELLOW	,500)
-
-	cv2.imshow("center"+get_date(), region)
-	pprint	((x,y,r)) 
+	circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1,1000,param1=70,param2=50,minRadius=200,maxRadius=403)
+	if 	circles is not None	:
+		x,y,r=circles[0][0][0],circles[0][0][1],circles[0][0][2]
+		cv2.circle(res,(int(x),int(y)) ,r, RED , thickness=1, lineType=8, shift=0) 
+		draw_cross(res,(int(x),int(y)),YELLOW	,500)
+		cv2.imshow("center"+get_date(), res) if DEBUG_IMSHOW	else 1
+	else:
+		logging.info('no detect')
+	return	int(x),int(y)
 
 
 
-def get_img_cutted(img,loc_center):
-	cv2.circle(img,loc_center ,0, BLACK , thickness=CENTER_CIRCULE_RADIUS, lineType=8, shift=0) 
+
+	cv2.imshow("center", img)
+	cv2.createTrackbar('dp', 'center' , 1, 10, nothing)
+	cv2.createTrackbar('mindist', 'center' , 10, 500, nothing)
+	cv2.createTrackbar('param1', 'center' , 80, 100, nothing)
+	cv2.createTrackbar('param2', 'center' , 50, 100, nothing)
+	cv2.createTrackbar('minRadius', 'center' , 200, 500, nothing)
+	cv2.createTrackbar('maxRadius', 'center' , 1000, 2000, nothing)
+
+	while(1):
+		k = cv2.waitKey(1) & 0xFF
+		if k == 27:
+			exit()
+			break
+
+		# get current positions of four trackbars
+		dp = cv2.getTrackbarPos('dp', 'center')
+		mindist = cv2.getTrackbarPos('mindist', 'center')
+		param1 = cv2.getTrackbarPos('param1', 'center')
+		param2 = cv2.getTrackbarPos('param2', 'center')
+		minRadius = cv2.getTrackbarPos('minRadius', 'center')
+		maxRadius = cv2.getTrackbarPos('maxRadius', 'center')
+
+
+		res = region.copy()
+		gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
+		#circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1,1000,param1=70,param2=50,minRadius=200,maxRadius=403)
+		circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1,1000,param1=param1,param2=param2,minRadius=minRadius,maxRadius=maxRadius)
+
+		if 	circles is not None	:
+			x,y,r=circles[0][0][0],circles[0][0][1],circles[0][0][2]
+			cv2.circle(res,(int(x),int(y)) ,r, RED , thickness=1, lineType=8, shift=0) 
+			draw_cross	(res	,(int(x),int(y)),YELLOW	,500)
+			cv2.imshow("center", res)
+			logging.info('>>>>')
+			logging.info(circles)
+			logging.info(param1)
+			logging.info(param2)
+			logging.info(minRadius)
+			logging.info(maxRadius)
+			logging.info(r)
+			logging.info('<<<')
+
+		else:
+			logging.info('no detect')
+
+	return	int(x),int(y)
+
+
+
+def get_img_cutted(region,loc_center):
+	#img = region.copy()
+	img = region 
+	cv2.circle(img,loc_center ,int(CENTER_CIRCULE_RADIUS / 2), BLACK , thickness=CENTER_CIRCULE_RADIUS, lineType=8, shift=0) 
 	cv2.imshow("cutted.png"+get_date(), img) if DEBUG_IMSHOW	else 1
 	return img
   
 
-def get_cutted_info(region,contours_cutted_filtered,loc_center):
+def get_cutted_info(region,contours_cutted_filtered,loc_center,filename):
 	info_list=[]
 	res = region.copy()
+
 	for idx, contour in enumerate(contours_cutted_filtered):
-		cv2.drawContours(res, contour, -1, GREEN, 1)
+		cv2.drawContours(region, contour, -1, GREEN, 1)
 
 		m=cv2.moments(contour) 
 		cx = int(m['m10'] / m['m00'])
@@ -195,9 +239,9 @@ def get_cutted_info(region,contours_cutted_filtered,loc_center):
 		# rot_rect = cv2.minAreaRect(contour)
 		# (cx,cy), (w,h), rot_angle = rot_rect
 		# rbox = np.int0(cv2.boxPoints(rot_rect))
-		# cv2.drawContours(res, [rbox], 0, (0,255,0), 1)
+		# cv2.drawContours(region, [rbox], 0, (0,255,0), 1)
 		
-		draw_cross(res,(int(cx),int(cy)))
+		draw_cross(region,(int(cx),int(cy)))
 		(ox,oy)=loc_center
 		theta_degree=get_degree((cx,cy),loc_center)
 		r=math.hypot(ox - cx, cy - oy)
@@ -206,22 +250,23 @@ def get_cutted_info(region,contours_cutted_filtered,loc_center):
 			"theta": theta_degree,
 		}]
 
-
-
 		text="#{}: cx{},cy{},degree{},r{}".format(idx, int(cx),int(cy) , str(theta_degree),r)
 		org=(int(cx)-10,int(cy)-10)
-		#cv2.putText(res, text=text, org = org, fontFace = cv2.FONT_HERSHEY_PLAIN, fontScale=0.7, color=(0,0,255), thickness = 1, lineType=cv2.LINE_AA)
-		cv2.putText(res, text=text, org = org, fontFace = 1, fontScale=1, color=YELLOW, thickness = 1, lineType=16)
+		#cv2.putText(region, text=text, org = org, fontFace = cv2.FONT_HERSHEY_PLAIN, fontScale=0.7, color=(0,0,255), thickness = 1, lineType=cv2.LINE_AA)
+		cv2.putText(region, text=text, org = org, fontFace = 1, fontScale=1, color=YELLOW, thickness = 1, lineType=16)
 
-
+	# cv2.imshow(filename	+ " cutted.png"+get_date(), region)
+	# cv2.waitKey(0)
 
 	msg = get_alted(info_list)
 	text_center="Center: ox{},oy{}".format(int(ox),int(oy))
 
-	ox,oy=loc_center	
-	cv2.putText(res, text=text_center, org = loc_center, fontFace = 1, fontScale=1, color=WHITE, thickness = 1, lineType=16)
-	cv2.putText(res, text="Result: "+msg, org = (ox,oy+20), fontFace = 1, fontScale=1, color=GREEN, thickness = 1, lineType=16)
-	#cv2.imshow("cutted.png"+get_date(), res)
+	ox,oy=loc_center
+	draw_cross(region,loc_center)	
+	cv2.putText(region, text=filename, org = loc_center, fontFace = 1, fontScale=1, color=PINK, thickness = 1, lineType=16)
+	cv2.putText(region, text=text_center, org = (ox,oy+20), fontFace = 1, fontScale=1, color=PINK, thickness = 1, lineType=16)
+	cv2.putText(region, text="msg: "+msg, org = (ox,oy+40), fontFace = 1, fontScale=1, color=PINK, thickness = 1, lineType=16)
+	#v2.imshow(filename	+ " cutted.png"+get_date(), region)
 
 
 
