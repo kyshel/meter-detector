@@ -1,7 +1,7 @@
 # meter-detector
-这是图灵联邦举办的一项比赛，根据所提供如下的1001张图片，实现2件事：
-1、定位表盘的圆心位置；
-2、定位圆心和指针的位置；
+这是图灵联邦举办的一项比赛，根据所提供如下的1001张图片，实现2件事：  
+1、定位表盘的圆心位置；  
+2、定位圆心和指针的位置；  
 ![image](https://user-images.githubusercontent.com/11898075/80555225-3c08d180-8a02-11ea-8c45-8ac4cb13a920.png)
 比赛链接：https://www.turingtopia.com/competitionnew/detail/53aa39e8d46048d8a4de2c6d21adafb1/sketch
 
